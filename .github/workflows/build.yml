@@ -3,6 +3,7 @@ name: build
 on:
   push:
     branches:
+      - main
       - master
       - stable
     tags:
@@ -54,7 +55,7 @@ on:
       base:
         description: the branch that the changes are compared with
         type: string
-        default: master
+        default: main
 
 env:
   opt: ${{ github.event_name == 'push' && 'O2' || 'O0' }}
