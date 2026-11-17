@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -73,4 +74,11 @@ compatibleAppVersion vr1 vr2 =
 mkCompatibleIf :: AppVersion -> Bool -> Maybe (AppCompatible AppVersion)
 v `mkCompatibleIf` cond = if cond then Just $ AppCompatible_ v else Nothing
 
-$(JQ.deriveJSON defaultJSON ''AppVersionRange)
+instance J.FromJSON AppVersionRange where
+  parseJSON = J.withObject "AppVersionRange" $ \v -> do
+    minV <- v J..: "minVersion"
+    maxV <- v J..: "maxVersion"
+    maybe (fail "invalid version range") pure $
+      if minV <= maxV then Just (AppVRange minV maxV) else Nothing
+
+$(JQ.deriveToJSON defaultJSON ''AppVersionRange)
