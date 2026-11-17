@@ -8,8 +8,10 @@
 
 module Simplex.Chat.Bot where
 
+import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async
 import Control.Concurrent.STM
+import Control.Exception (handleJust)
 import Control.Monad
 import qualified Data.ByteString.Char8 as B
 import Data.List.NonEmpty (NonEmpty (..))
@@ -29,11 +31,17 @@ import Simplex.Messaging.Agent.Protocol (CreatedConnLink (..))
 import Simplex.Messaging.Crypto.File (CryptoFile)
 import Simplex.Messaging.Encoding.String (strEncode)
 import System.Exit (exitFailure)
+import System.IO.Error (isEOFError)
+
+-- | Discard terminal input, and keep running when stdin is closed
+-- (systemd, Docker without -i, background shell) instead of failing on EOF.
+ignoreStdin :: IO ()
+ignoreStdin = handleJust (guard . isEOFError) (\_ -> forever $ threadDelay maxBound) (forever $ void getLine)
 
 chatBotRepl :: String -> (Contact -> String -> IO String) -> User -> ChatController -> IO ()
 chatBotRepl welcome answer _user cc = do
   initializeBotAddress cc
-  race_ (forever $ void getLine) . forever $ do
+  race_ ignoreStdin . forever $ do
     (_, event) <- atomically . readTBQueue $ outputQ cc
     case event of
       Right (CEvtContactConnected _ contact _) -> do
