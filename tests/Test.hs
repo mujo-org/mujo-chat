@@ -87,7 +87,9 @@ main = do
         badgeStripeTests
         badgeStoreVerifierTests
       describe "SimpleX chat markdown" markdownTests
-      describe "JSON Tests" jsonTests
+      describe "JSON Tests" $ do
+        jsonTests
+        appVersionJSONTests
       describe "Member relations" memberRelationsTests
       describe "SimpleX chat view" viewTests
       describe "SimpleX chat protocol" protocolTests

@@ -14,6 +14,8 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import GHC.Generics (Generic)
 import Generic.Random (genericArbitraryU)
 import JSONFixtures
+import Data.Either (isLeft)
+import Simplex.Chat.Remote.AppVersion
 import Simplex.Chat.Markdown (Format (Bold), MarkdownBlock (UnknownBlock), ParsedMarkdown (..), parsedMarkdown)
 import Simplex.Chat.Remote.Protocol (owsf2tagged)
 import Simplex.Chat.Types (BoolDef (..))
@@ -103,3 +105,21 @@ jsonTests = do
     it "should convert chat types" owsf2TaggedJSONTest
     describe "SomeType" owsf2TaggedSomeTypeTests
   describe "Markdown blocks" markdownBlocksJSONTests
+
+
+appVersionJSONTests :: Spec
+appVersionJSONTests = do
+  describe "AppVersionRange JSON encoding" $ do
+    it "should parse valid range" $ do
+      let v1 = decodeVersion "\"1.0\""
+          v2 = decodeVersion "\"2.0\""
+      case J.eitherDecode "{\"minVersion\":\"1.0\",\"maxVersion\":\"2.0\"}" :: Either String AppVersionRange of
+        Left err -> expectationFailure err
+        Right range -> (minVersion range, maxVersion range) `shouldBe` (v1, v2)
+    it "should fail on invalid range" $
+      isLeft (J.eitherDecode "{\"minVersion\":\"2.0\",\"maxVersion\":\"1.0\"}" :: Either String AppVersionRange) `shouldBe` True
+    where
+      decodeVersion :: LB.ByteString -> AppVersion
+      decodeVersion s = case J.eitherDecode s of
+        Right v -> v
+        Left e -> error e
